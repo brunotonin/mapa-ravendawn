@@ -24,11 +24,9 @@ app.get('/minimap/:map/:zoom/:x/:y', async (req, res) => {
 
     // Determine qual imagem de minimapa usar com base no nível de zoom
     if (map == 7) {
-        inputImagePath = 'src/assets/minimap/minimap';
-
+        inputImagePath =  path.join(__dirname, 'public/assets/map/minimap');
     } else {
-        inputImagePath = `src/assets/minimap/floor${map}`;
-
+        inputImagePath = path.join(__dirname, `public/assets/map/floor${map}`);
     }
     let img = `${inputImagePath}/${zoom}/${x}/${y}.png`;
 

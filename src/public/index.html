@@ -2,6 +2,15 @@
 <html lang="pt-BR">
 
 <head>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-51BPLK5NB7"></script>
+    <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', 'G-51BPLK5NB7');
+    </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mapa Interativo</title>
@@ -58,9 +67,9 @@
     <script>
         var markers = [];
         function addMarker(e) {
-            console.log(e)
-            let marker = L.marker(e.latlng).addTo(map);
-            markers.push(marker);
+            // console.log(e)
+            // let marker = L.marker(e.latlng).addTo(map);
+            // markers.push(marker);
         }
         // Inicialize o mapa com as coordenadas iniciais e o nível de zoom
         var map = L.map('map').setView([0, 0], 0); // Coordenadas e zoom iniciais
