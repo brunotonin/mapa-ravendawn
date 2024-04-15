@@ -2,25 +2,18 @@
 <html lang="pt-BR">
 
 <head>
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-51BPLK5NB7"></script>
-    <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-
-    gtag('config', 'G-51BPLK5NB7');
-    </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mapa Interativo</title>
     <!-- Importe os arquivos CSS e JavaScript do Leaflet -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src='https://api.mapbox.com/mapbox.js/plugins/leaflet-fullscreen/v1.0.1/Leaflet.fullscreen.min.js'></script>
+    <link href='https://api.mapbox.com/mapbox.js/plugins/leaflet-fullscreen/v1.0.1/leaflet.fullscreen.css' rel='stylesheet' />
     <style>
         /* Estilos opcionais para o mapa */
         #map {
-            height: 100vh;
+            height: 98vh;
             /* Altura total da janela do navegador */
             width: 100%;
             /* Largura total */
@@ -54,34 +47,45 @@
 
 <body>
     <!-- Crie um contêiner para o mapa -->
-    <div id="map"></div>
-
-    <!-- Adicione botões de seta para alterar os níveis do mapa -->
-    <div class="arrow-button arrow-button-left" onclick="changeLevel(-1)">
-        &#10094;
-    </div>
-    <div class="arrow-button arrow-button-right" onclick="changeLevel(1)">
-        &#10095;
+    <div id="map">
+        <!-- Adicione botões de seta para alterar os níveis do mapa -->
+        <div class="arrow-button arrow-button-left" onclick="changeLevel(-1)">
+            &#10094;
+        </div>
+        <div class="arrow-button arrow-button-right" onclick="changeLevel(1)">
+            &#10095;
+        </div>
     </div>
 
     <script>
-        var markers = [];
-        function addMarker(e) {
-            // console.log(e)
-            // let marker = L.marker(e.latlng).addTo(map);
-            // markers.push(marker);
-        }
+        let markers = [];
+        let minZoom = 3;
+        let maxZoom = 6;
+        let blockNext = false;
+        let bounds = L.latLngBounds(L.latLng(85, 170), L.latLng(-20, -170));
+
         // Inicialize o mapa com as coordenadas iniciais e o nível de zoom
-        var map = L.map('map').setView([0, 0], 0); // Coordenadas e zoom iniciais
-        map.on('click', addMarker);
+        var map = L.map('map', {
+            fullscreenControl: {
+                pseudoFullscreen: false // if true, fullscreen to page width and height
+            },
+            doubleClickZoom: false,
+        }).setView([60, 0], 3); // Coordenadas e zoom iniciais
+        map.setMaxBounds(bounds);
+        map.on('fullscreenchange', function () {
+            setTimeout(() => {
+                map.setView([60, 0], 3);
+                // set max bounds
+                console.log(bounds);
+            }, 100);
+        });
 
         var currentLevel = 7;
 
-
         // Adicione uma camada de mosaico do minimapa para cada nível
         var minimapLayer = L.tileLayer('/minimap/{map}/{z}/{x}/{y}', {
-            minZoom: 0,
-            maxZoom: 6,
+            minZoom: minZoom,
+            maxZoom: maxZoom,
             map: currentLevel
         });
         var minimapLayerNext = undefined
@@ -89,15 +93,21 @@
         // Adicione a camada de mosaico do minimapa ao mapa
         minimapLayer.addTo(map);
 
-
         // Função para alterar o nível do mapa
         function changeLevel(delta) {
+            if (blockNext) {
+                return;
+            }
             currentLevel += delta;
             if (currentLevel < 7) {
                 currentLevel = 7;
+                return;
             } else if (currentLevel > 15) {
                 currentLevel = 15;
+                return;
             }
+
+            blockNext = true;
 
             if (minimapLayer) {
                 map.removeLayer(minimapLayer); // Remove a camada de mosaico atual, se existir
@@ -111,8 +121,8 @@
             if (currentLevel > 7 & currentLevel < 15) {
                 // Adiciona uma nova camada de mosaico do minimapa com o novo nível
                 minimapLayerNext = L.tileLayer('/minimap/{map}/{z}/{x}/{y}', {
-                    minZoom: 0,
-                    maxZoom: 6,
+                    minZoom: minZoom,
+                    maxZoom: maxZoom,
                     map: currentLevel + 1,
 
                 });
@@ -120,18 +130,18 @@
                 haveNext = true;
             }
 
-
-
             // Adiciona uma nova camada de mosaico do minimapa com o novo nível
             minimapLayer = L.tileLayer('/minimap/{map}/{z}/{x}/{y}', {
-                minZoom: 0,
-                maxZoom: 6,
+                minZoom: minZoom,
+                maxZoom: maxZoom,
                 map: currentLevel,
                 opacity: haveNext ? 0.7 : 1
             });
-            minimapLayer.addTo(map); // Adiciona a nova camada de mosaico ao mapa]
+            minimapLayer.addTo(map); // Adiciona a nova camada de mosaico ao mapa
 
-
+            setTimeout(() => {
+                blockNext = false;
+            }, 500);
         }
     </script>
 </body>
