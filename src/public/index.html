@@ -86,7 +86,9 @@
         var minimapLayer = L.tileLayer('/minimap/{map}/{z}/{x}/{y}', {
             minZoom: minZoom,
             maxZoom: maxZoom,
-            map: currentLevel
+            map: currentLevel,
+            // webp
+            format: 'webp',
         });
         var minimapLayerNext = undefined
 

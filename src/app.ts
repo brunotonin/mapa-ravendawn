@@ -28,7 +28,7 @@ app.get('/minimap/:map/:zoom/:x/:y', async (req, res) => {
     } else {
         inputImagePath = path.join(__dirname, `public/assets/map/floor${map}`);
     }
-    let img = `${inputImagePath}/${zoom}/${x}/${y}.png`;
+    let img = `${inputImagePath}/${zoom}/${x}/${y}.webp`;
 
     // Verifique se a imagem existe
     if (!fs.existsSync(img)) {
@@ -40,13 +40,9 @@ app.get('/minimap/:map/:zoom/:x/:y', async (req, res) => {
 
     // Determine o tipo de conteúdo da resposta
 
-   // Envie o tile gerado como resposta
-   res.set('Content-Type', 'image/png');
+   // Envie o tile gerado como resposta webp
+   res.set('Content-Type', 'image/webp');
    res.send(fs.readFileSync(img));
-
-
-
-
 });
 
 // Inicie o servidor
