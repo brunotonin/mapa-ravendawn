@@ -24,7 +24,7 @@ app.get('/minimap/:map/:zoom/:x/:y', async (req, res) => {
 
     // Determine qual imagem de minimapa usar com base no nível de zoom
     if (map == 7) {
-        inputImagePath =  path.join(__dirname, 'public/assets/map/minimap');
+        inputImagePath = path.join(__dirname, 'public/assets/map/minimap');
     } else {
         inputImagePath = path.join(__dirname, `public/assets/map/floor${map}`);
     }
@@ -35,14 +35,10 @@ app.get('/minimap/:map/:zoom/:x/:y', async (req, res) => {
         return res.status(404).send('Imagem não encontrada');
     }
 
-    // Redimensione a imagem para 256x256
-    // const image = sharp(img).resize(256, 256);
-
-    // Determine o tipo de conteúdo da resposta
-
-   // Envie o tile gerado como resposta webp
-   res.set('Content-Type', 'image/webp');
-   res.send(fs.readFileSync(img));
+    // Envie o tile gerado como resposta webp
+    res.set('Content-Type', 'image/webp');
+    res.set('Cache-Control', 'public, max-age=31536000');
+    res.send(fs.readFileSync(img));
 });
 
 // Inicie o servidor
