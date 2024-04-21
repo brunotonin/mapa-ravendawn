@@ -13,6 +13,12 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
+// add route to import js
+app.get('/js/:file', (req, res) => {
+    res.set('Content-Type', 'text/javascript');
+    res.sendFile(path.join(__dirname, 'public', 'assets', 'js', req.params.file));
+});
+
 // Define a rota para servir os tiles do minimapa
 app.get('/minimap/:map/:zoom/:x/:y', async (req, res) => {
     const map = parseInt(req.params.map, 10);

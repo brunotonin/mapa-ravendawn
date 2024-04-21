@@ -8,8 +8,11 @@
     <!-- Importe os arquivos CSS e JavaScript do Leaflet -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <!-- Importe os arquivos CSS e JavaScript do Leaflet.Draw -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
     <script src='https://api.mapbox.com/mapbox.js/plugins/leaflet-fullscreen/v1.0.1/Leaflet.fullscreen.min.js'></script>
-    <link href='https://api.mapbox.com/mapbox.js/plugins/leaflet-fullscreen/v1.0.1/leaflet.fullscreen.css' rel='stylesheet' />
+    <link href='https://api.mapbox.com/mapbox.js/plugins/leaflet-fullscreen/v1.0.1/leaflet.fullscreen.css'rel='stylesheet' />
     <style>
         /* Estilos opcionais para o mapa */
         #map {
@@ -20,6 +23,45 @@
             margin: 0;
             /* Remova as margens */
         }
+
+        #save-button {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+            z-index: 1000;
+        }
+
+        #save-button:hover {
+            background-color: #45a049;
+        }
+
+        #color-button {
+            position: absolute;
+            top: 60px;
+            right: 10px;
+            background-color: #008CBA;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+            z-index: 1000;
+        }
+
+        #color-button:hover {
+            background-color: #005F6B;
+        }
+
 
         .arrow-button {
             position: absolute;
@@ -55,6 +97,8 @@
         <div class="arrow-button arrow-button-right" onclick="changeLevel(1)">
             &#10095;
         </div>
+
+        <button id="save-button" onclick="saveAndCopyURL()">Compartilhar</button>
     </div>
 
     <script>
@@ -62,6 +106,21 @@
         let minZoom = 3;
         let maxZoom = 6;
         let blockNext = false;
+        let elementsData = [];
+        // Inicialize o array de polylines para cada nível
+        for (var i = 7; i <= 15; i++) {
+            elementsData[i] = [];
+        }
+        // get elementsData from get url data
+        const urlParams = new URLSearchParams(window.location.search);
+        const data = urlParams.get('data');
+        if (data) {
+            const polylinesDataFromURL = JSON.parse(decodeURIComponent(data));
+            for (var i = 7; i <= 15; i++) {
+                elementsData[i] = polylinesDataFromURL[i];
+            }
+        }
+
         let bounds = L.latLngBounds(L.latLng(85, 170), L.latLng(-20, -170));
 
         // Inicialize o mapa com as coordenadas iniciais e o nível de zoom
@@ -141,10 +200,146 @@
             });
             minimapLayer.addTo(map); // Adiciona a nova camada de mosaico ao mapa
 
+            // Remove todas as camadas de desenho do mapa
+            map.eachLayer(function (layer) {
+                if (layer instanceof L.Polyline) {
+                    map.removeLayer(layer);
+                }
+            });
+
+            // Adiciona apenas as polylines correspondentes ao nível atual
+            drawElementsForCurrentLevel();
+
             setTimeout(() => {
                 blockNext = false;
             }, 500);
         }
+
+        // Adicionar funcionalidade de desenho
+        var layer = new L.FeatureGroup();
+
+        // Adiciona a camada ao mapa
+        map.addLayer(layer);
+
+        // Adiciona o controle de desenho ao mapa
+        var drawControl = new L.Control.Draw({
+            edit: {
+                featureGroup: layer, // Define a camada como o grupo de entidades editáveis
+                remove: true
+            },
+            draw: {
+                polyline: {
+                    shapeOptions: {
+                        color: 'red',
+                        opacity: 1,
+                    fillOpacity: 1
+                    },
+                    showLength: false
+                },
+                polygon: false,
+                circle: false,
+                rectangle: false,
+                marker: false,
+                circlemarker: {
+                    color: 'red',
+                    opacity: 1,
+                    fillOpacity: 1,
+                },
+                
+            }
+        });
+        map.addControl(drawControl);
+
+        // Adiciona um ouvinte para o evento 'draw:created'
+        map.on('draw:created', function (e) {
+            let type = e.layerType;
+            let layer = e.layer;
+
+            // Adiciona o polyline à camada atual
+            layer.addTo(map);
+            let points;
+            if (type == 'polyline') {
+                points = layer.getLatLngs();
+            } else if (type == 'circlemarker') {
+                points = layer.getLatLng();
+            }
+
+            if (points == undefined) {
+                return;
+            }
+
+            // Adiciona a polyline ao array de polylines
+            elementsData[currentLevel].push({
+                type: type,
+                points: points,
+                color: layer.options.color
+            });
+        });
+
+        // on clear all
+        map.on('draw:deleted', function (e) {
+            elementsData[currentLevel] = [];
+        });
+        
+
+        // Função para atualizar a cor do polyline
+        function updatePolylineColor(color) {
+            var options = {
+                color: color
+            };
+            drawControl.setDrawingOptions({
+                polyline: options
+            });
+        }
+
+        // Função para desenhar as polylines correspondentes ao nível atual
+        function drawElementsForCurrentLevel() {
+            // Desenha as polylines correspondentes ao nível atual
+            var elementsData = getElementsDataForLevel(currentLevel);
+            for (var i = 0; i < elementsData.length; i++) {
+                let elementData = elementsData[i];
+                let type = elementData.type;
+                if (type == 'polyline') {
+                    var polyline = L.polyline(elementData.points, {
+                        color: elementData.color
+                    });
+                    layer.addLayer(polyline);
+                } else if (type == 'circlemarker') {
+                    var circleMarker = L.circleMarker(elementData.points, {
+                        color: elementData.color,
+                        opacity: 1,
+                        fillOpacity: 1,
+                    });
+                    layer.addLayer(circleMarker);
+                }
+            }
+        }
+
+        // Função fictícia para obter os dados das polylines correspondentes ao nível atual
+        function getElementsDataForLevel(level) {
+            return elementsData[level];
+        }
+
+        function saveAndCopyURL() {
+            // Salva os dados das polylines em formato JSON
+            var data = JSON.stringify(elementsData);
+            // Gera a URL com os dados
+            var url = window.location.href.split('?')[0] + '?data=' + encodeURIComponent(data);
+            // Copia a URL para a área de transferência
+            navigator.clipboard.writeText(url)
+                .then(() => {
+                    alert("URL copiada para a área de transferência");
+                })
+                .catch((error) => {
+                    console.error("Erro ao copiar URL: ", error);
+                });
+        }
+
+        function openColorPicker() {
+            document.getElementById('colorPicker').click();
+        }
+
+        drawElementsForCurrentLevel(currentLevel)
     </script>
 </body>
 
